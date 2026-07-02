@@ -4,7 +4,7 @@ import psycopg2
 
 
 def cargarEntorno():
-    rutaEnv = os.path.join(os.getcwd(), ".env")
+    rutaEnv = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
     if not os.path.exists(rutaEnv):
         return
 
@@ -14,7 +14,7 @@ def cargarEntorno():
             if not linea or linea.startswith("#") or "=" not in linea:
                 continue
             clave, valor = linea.split("=", 1)
-            os.environ.setdefault(clave.strip(), valor.strip())
+            os.environ[clave.strip()] = valor.strip()
 
 
 cargarEntorno()

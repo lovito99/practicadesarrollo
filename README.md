@@ -15,6 +15,8 @@ Tecnologias usadas:
 ├── README.md
 ├── backend
 │   ├── baseDatos.sql
+│   ├── crearCredenciales.sql
+│   ├── recrearBaseDatos.sql
 │   ├── .env
 │   ├── requirements.txt
 │   ├── servidor.py
@@ -66,10 +68,10 @@ URLBASEFRONTEND=http://localhost:5173
 RUTAAPI=/api
 RUTAALBUMES=/albumes
 DBHOST=localhost
-DBPUERTO=5432
+DBPUERTO=5436
 DBDIALECTO=postgresql
-DBUSUARIO=postgres
-DBCLAVE=tuClave
+DBUSUARIO=discos
+DBCLAVE=123456
 DBNOMBRE=discosmusicales
 ```
 
@@ -82,10 +84,10 @@ Valores importantes:
 - `RUTAAPI`: ruta base de la API. Actualmente es `/api`.
 - `RUTAALBUMES`: ruta base del recurso albumes. Actualmente es `/albumes`.
 - `DBHOST`: servidor de PostgreSQL. Actualmente es `localhost`.
-- `DBPUERTO`: puerto de PostgreSQL. Actualmente es `5432`.
+- `DBPUERTO`: puerto de PostgreSQL en Docker. Actualmente es `5436`.
 - `DBDIALECTO`: motor o dialecto de base de datos. Actualmente es `postgresql`.
-- `DBUSUARIO`: usuario de PostgreSQL. Actualmente es `postgres`.
-- `DBCLAVE`: contraseña del usuario. Cambiala por tu clave real.
+- `DBUSUARIO`: usuario de PostgreSQL para la aplicacion. Actualmente es `discos`.
+- `DBCLAVE`: contraseña del usuario. Actualmente es `123456`.
 - `DBNOMBRE`: nombre de la base de datos. Actualmente es `discosmusicales`.
 
 Si tu PostgreSQL usa otro usuario, por ejemplo `postgres`, cambia:
@@ -111,20 +113,27 @@ sudo systemctl start postgresql
 sudo systemctl enable postgresql
 ```
 
-Crear o cambiar la clave del usuario `postgres`:
+Crear el contenedor PostgreSQL del proyecto:
 
 ```bash
-sudo -u postgres psql
+docker run -d --name discosmusicales_postgres \
+  -e POSTGRES_USER=discos \
+  -e POSTGRES_PASSWORD=123456 \
+  -e POSTGRES_DB=discosmusicales \
+  -p 5436:5432 \
+  postgres:16-alpine
 ```
 
-Dentro de PostgreSQL ejecuta:
+Esto crea:
 
-```sql
-ALTER USER postgres WITH PASSWORD 'tuClave';
-\q
+```text
+usuario: discos
+clave: 123456
+base de datos: discosmusicales
+puerto local: 5436
 ```
 
-Despues actualiza `backend/.env` con esa misma clave.
+Despues verifica que `backend/.env` tenga `DBUSUARIO=discos` y `DBCLAVE=123456`.
 
 ## Base De Datos
 
@@ -134,18 +143,44 @@ La base de datos esta en:
 backend/baseDatos.sql
 ```
 
+Para eliminar la base, crearla de nuevo y ejecutar la migracion inicial con los datos actuales del proyecto:
+
+```bash
+cd ~/Documentos/GitHub/practicadesarrollo
+./backend/recrearBd.sh
+```
+
+Tambien puedes ejecutar todo automaticamente con:
+
+```bash
+cd ~/Documentos/GitHub/practicadesarrollo
+chmod +x backend/recrearBd.sh
+./backend/recrearBd.sh
+```
+
+El script recrea la base, ejecuta la migracion y verifica la conexion con el usuario del `.env`.
+
+Ese comando recrea:
+
+```text
+usuario: discos
+clave: 123456
+base de datos: discosmusicales
+puerto: 5436
+```
+
 Para crearla en PostgreSQL:
 
 ```bash
-psql -U postgres -f backend/baseDatos.sql
+PGPASSWORD="123456" psql -h localhost -p 5436 -U discos -d discosmusicales -f backend/migraciones/001Inicial.sql
 ```
 
-Si pide clave, escribe la clave configurada para el usuario `postgres`.
+Si pide clave, escribe `123456`.
 
 Si usas otro usuario:
 
 ```bash
-psql -U tuUsuario -f backend/baseDatos.sql
+psql -h localhost -p 5436 -U tuUsuario -d discosmusicales -f backend/migraciones/001Inicial.sql
 ```
 
 La base creada se llama:
@@ -160,7 +195,11 @@ Tablas creadas:
 - `album`
 - `tema`
 
-El archivo `backend/baseDatos.sql` crea la base de datos y ejecuta la migracion:
+La migracion inicial registra 10 albumes de prueba con sus artistas y un tema por album.
+
+El contenedor Docker crea el usuario y la base de datos.
+
+El archivo de migracion crea tablas y datos iniciales:
 
 ```text
 backend/migraciones/001Inicial.sql
@@ -172,7 +211,7 @@ Para ejecutar la migracion usando los valores de `backend/.env`:
 set -a
 . backend/.env
 set +a
-PGPASSWORD="$DBCLAVE" psql -h "$DBHOST" -p "$DBPUERTO" -U "$DBUSUARIO" -f backend/baseDatos.sql
+PGPASSWORD="$DBCLAVE" psql -h "$DBHOST" -p "$DBPUERTO" -U "$DBUSUARIO" -d "$DBNOMBRE" -f backend/migraciones/001Inicial.sql
 ```
 
 ## Como Correr El Backend
@@ -181,8 +220,8 @@ Desde la raiz del proyecto:
 
 ```bash
 cd backend
-pip install -r requirements.txt
-python servidor.py
+pip3 install -r requirements.txt
+python3 servidor.py
 ```
 
 El backend queda corriendo en:
@@ -291,6 +330,52 @@ Ejemplo de URL completa:
 http://localhost:5000/api/albumes
 ```
 
+## Pruebas Con Curl
+
+Listar albumes:
+
+```bash
+curl http://localhost:5000/api/albumes
+```
+
+Buscar un album por ID:
+
+```bash
+curl http://localhost:5000/api/albumes/1
+```
+
+Registrar un album:
+
+```bash
+curl -X POST http://localhost:5000/api/albumes \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tituloAlbum": "Album de Prueba",
+    "fechaLanzamiento": "2026-07-02",
+    "genero": "Rock",
+    "idArtista": 1
+  }'
+```
+
+Actualizar un album:
+
+```bash
+curl -X PUT http://localhost:5000/api/albumes/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tituloAlbum": "Cancion Animal Editado",
+    "fechaLanzamiento": "1990-08-07",
+    "genero": "Rock",
+    "idArtista": 1
+  }'
+```
+
+Eliminar un album:
+
+```bash
+curl -X DELETE http://localhost:5000/api/albumes/1
+```
+
 ## Orden Para Ejecutar Todo
 
 1. Instalar PostgreSQL, Python, pip, Node y npm.
@@ -298,9 +383,10 @@ http://localhost:5000/api/albumes
 3. Crear la clave del usuario `postgres`.
 4. Copiar `backend/.env.example` a `backend/.env`.
 5. Revisar usuario, contraseña, nombre de base de datos y puerto en `backend/.env`.
-6. Crear la base de datos con `psql -U postgres -f backend/baseDatos.sql`.
-7. Correr el backend con `python servidor.py`.
-8. Copiar `frontend/.env.example` a `frontend/.env`.
-9. Revisar la URL del backend en `frontend/.env`.
-10. En el frontend ejecutar `npm install` solo si falta `node_modules`.
-11. Correr el frontend con `npm run dev`.
+6. Crear el contenedor PostgreSQL con `docker run`.
+7. Ejecutar la migracion con `./backend/recrearBd.sh`.
+8. Correr el backend con `python3 servidor.py`.
+9. Copiar `frontend/.env.example` a `frontend/.env`.
+10. Revisar la URL del backend en `frontend/.env`.
+11. En el frontend ejecutar `npm install` solo si falta `node_modules`.
+12. Correr el frontend con `npm run dev`.
