@@ -28,6 +28,7 @@ def convertirDiccionario(cursor, filas):
 def obtenerConexion():
     return psycopg2.connect(
         host=os.getenv("DBHOST", "localhost"),
+        port=int(os.getenv("DBPUERTO", 5432)),
         user=os.getenv("DBUSUARIO", "root"),
         password=os.getenv("DBCLAVE", ""),
         dbname=os.getenv("DBNOMBRE", "discosmusicales"),

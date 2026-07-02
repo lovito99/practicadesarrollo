@@ -8,8 +8,10 @@ from controladores.albumControlador import (
 
 
 def registrarRutasAlbum(app):
-    app.get("/api/albumes")(obtenerAlbumes)
-    app.get("/api/albumes/<int:idAlbum>")(obtenerAlbumPorId)
-    app.post("/api/albumes")(crearAlbum)
-    app.put("/api/albumes/<int:idAlbum>")(editarAlbum)
-    app.delete("/api/albumes/<int:idAlbum>")(borrarAlbum)
+    rutaBase = app.config["RUTAAPI"] + app.config["RUTAALBUMES"]
+
+    app.get(rutaBase)(obtenerAlbumes)
+    app.get(rutaBase + "/<int:idAlbum>")(obtenerAlbumPorId)
+    app.post(rutaBase)(crearAlbum)
+    app.put(rutaBase + "/<int:idAlbum>")(editarAlbum)
+    app.delete(rutaBase + "/<int:idAlbum>")(borrarAlbum)

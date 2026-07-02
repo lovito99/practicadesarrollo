@@ -1,0 +1,42 @@
+# Dependencias de Node
+node_modules/
+frontend/node_modules/
+
+# Compilados del frontend
+dist/
+frontend/dist/
+
+# Entornos y archivos locales
+.env
+backend/.env
+frontend/.env
+.env.*
+!.env.example
+!backend/.env.example
+!frontend/.env.example
+
+# Temporales y cache de Python
+__pycache__/
+*.py[cod]
+*$py.class
+.python-version
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Entornos virtuales de Python
+.venv/
+venv/
+env/
+backend/.venv/
+backend/venv/
+backend/env/
+
+# Archivos del sistema y editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
