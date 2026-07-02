@@ -20,9 +20,12 @@ echo "Usuario app: ${DBUSUARIO}"
 
 if docker ps --format '{{.Names}}' | grep -qx 'discosmusicales_postgres'; then
   echo "Usando contenedor Docker: discosmusicales_postgres"
-  docker cp backend/migraciones/001Inicial.sql discosmusicales_postgres:/tmp/001Inicial.sql
   docker exec -e PGPASSWORD="${DBCLAVE}" discosmusicales_postgres \
-    psql -U "${DBUSUARIO}" -d "${DBNOMBRE}" -f /tmp/001Inicial.sql
+    psql -U "${DBUSUARIO}" -d "${DBNOMBRE}" \
+    -c "DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public; GRANT ALL ON SCHEMA public TO ${DBUSUARIO};"
+  docker cp backend/baseDatos.sql discosmusicales_postgres:/tmp/baseDatos.sql
+  docker exec -e PGPASSWORD="${DBCLAVE}" discosmusicales_postgres \
+    psql -U "${DBUSUARIO}" -d "${DBNOMBRE}" -f /tmp/baseDatos.sql
 else
   echo "No se encontro el contenedor discosmusicales_postgres."
   echo "Crealo con:"

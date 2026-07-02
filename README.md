@@ -2,6 +2,10 @@
 
 Aplicacion de mantenimiento de albumes musicales.
 
+## Vista De La Aplicacion
+
+![Vista de la aplicacion](frontend/imagen-pegada.png)
+
 Tecnologias usadas:
 
 - Backend: Python, Flask y PostgreSQL
@@ -15,8 +19,6 @@ Tecnologias usadas:
 ├── README.md
 ├── backend
 │   ├── baseDatos.sql
-│   ├── crearCredenciales.sql
-│   ├── recrearBaseDatos.sql
 │   ├── .env
 │   ├── requirements.txt
 │   ├── servidor.py
@@ -26,8 +28,6 @@ Tecnologias usadas:
 │   │   └── albumControlador.py
 │   ├── modelos
 │   │   └── albumModelo.py
-│   ├── migraciones
-│   │   └── 001Inicial.sql
 │   └── rutas
 │       └── albumRutas.py
 └── frontend
@@ -143,7 +143,7 @@ La base de datos esta en:
 backend/baseDatos.sql
 ```
 
-Para eliminar la base, crearla de nuevo y ejecutar la migracion inicial con los datos actuales del proyecto:
+Para limpiar las tablas y ejecutar la migracion inicial con los datos actuales del proyecto:
 
 ```bash
 cd ~/Documentos/GitHub/practicadesarrollo
@@ -158,9 +158,9 @@ chmod +x backend/recrearBd.sh
 ./backend/recrearBd.sh
 ```
 
-El script recrea la base, ejecuta la migracion y verifica la conexion con el usuario del `.env`.
+El script limpia el esquema `public`, ejecuta `backend/baseDatos.sql` y verifica la conexion con el usuario del `.env`.
 
-Ese comando recrea:
+Ese comando usa:
 
 ```text
 usuario: discos
@@ -169,10 +169,10 @@ base de datos: discosmusicales
 puerto: 5436
 ```
 
-Para crearla en PostgreSQL:
+Para ejecutar la migracion manualmente en PostgreSQL:
 
 ```bash
-PGPASSWORD="123456" psql -h localhost -p 5436 -U discos -d discosmusicales -f backend/migraciones/001Inicial.sql
+PGPASSWORD="123456" psql -h localhost -p 5436 -U discos -d discosmusicales -f backend/baseDatos.sql
 ```
 
 Si pide clave, escribe `123456`.
@@ -180,7 +180,7 @@ Si pide clave, escribe `123456`.
 Si usas otro usuario:
 
 ```bash
-psql -h localhost -p 5436 -U tuUsuario -d discosmusicales -f backend/migraciones/001Inicial.sql
+psql -h localhost -p 5436 -U tuUsuario -d discosmusicales -f backend/baseDatos.sql
 ```
 
 La base creada se llama:
@@ -199,10 +199,10 @@ La migracion inicial registra 10 albumes de prueba con sus artistas y un tema po
 
 El contenedor Docker crea el usuario y la base de datos.
 
-El archivo de migracion crea tablas y datos iniciales:
+El unico archivo SQL crea tablas y datos iniciales:
 
 ```text
-backend/migraciones/001Inicial.sql
+backend/baseDatos.sql
 ```
 
 Para ejecutar la migracion usando los valores de `backend/.env`:
@@ -211,7 +211,7 @@ Para ejecutar la migracion usando los valores de `backend/.env`:
 set -a
 . backend/.env
 set +a
-PGPASSWORD="$DBCLAVE" psql -h "$DBHOST" -p "$DBPUERTO" -U "$DBUSUARIO" -d "$DBNOMBRE" -f backend/migraciones/001Inicial.sql
+PGPASSWORD="$DBCLAVE" psql -h "$DBHOST" -p "$DBPUERTO" -U "$DBUSUARIO" -d "$DBNOMBRE" -f backend/baseDatos.sql
 ```
 
 ## Como Correr El Backend
