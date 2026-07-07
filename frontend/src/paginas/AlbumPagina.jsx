@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Music } from 'lucide-react'
 
 import FormularioAlbum, { albumVacio } from '../componentes/FormularioAlbum.jsx'
+import ReporteReservas from '../componentes/ReporteReservas.jsx'
 import TablaAlbum from '../componentes/TablaAlbum.jsx'
 import {
   actualizarAlbum,
@@ -9,6 +10,11 @@ import {
   listarAlbumes,
   registrarAlbum,
 } from '../servicios/albumServicio.js'
+import {
+  descargarReporteReservasExcel,
+  descargarReporteReservasPdf,
+  obtenerReporteReservas,
+} from '../servicios/reservaServicio.js'
 
 function normalizarAlbum(album) {
   return {
@@ -25,6 +31,10 @@ export default function AlbumPagina() {
   const [idEditando, setIdEditando] = useState(null)
   const [cargando, setCargando] = useState(true)
   const [guardando, setGuardando] = useState(false)
+  const [reservas, setReservas] = useState([])
+  const [resumenReservas, setResumenReservas] = useState({})
+  const [cargandoReservas, setCargandoReservas] = useState(true)
+  const [exportando, setExportando] = useState(false)
   const [mensaje, setMensaje] = useState('')
   const [error, setError] = useState('')
 
@@ -43,8 +53,23 @@ export default function AlbumPagina() {
     }
   }
 
+  async function cargarReporteReservas() {
+    setCargandoReservas(true)
+    setError('')
+    try {
+      const datos = await obtenerReporteReservas()
+      setReservas(datos.reservas || [])
+      setResumenReservas(datos.resumen || {})
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setCargandoReservas(false)
+    }
+  }
+
   useEffect(() => {
     cargarAlbumes()
+    cargarReporteReservas()
   }, [])
 
   function cambiarFormulario(evento) {
@@ -110,6 +135,25 @@ export default function AlbumPagina() {
     }
   }
 
+  async function exportarReporte(tipo) {
+    setExportando(true)
+    setError('')
+    setMensaje('')
+
+    try {
+      if (tipo === 'pdf') {
+        await descargarReporteReservasPdf()
+      } else {
+        await descargarReporteReservasExcel()
+      }
+      setMensaje(`Reporte exportado en ${tipo === 'pdf' ? 'PDF' : 'Excel'}.`)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setExportando(false)
+    }
+  }
+
   return (
     <main className="pagina">
       <header className="cabecera">
@@ -141,6 +185,16 @@ export default function AlbumPagina() {
         />
         <TablaAlbum albumes={albumes} cargando={cargando} onEditar={seleccionarAlbum} onEliminar={borrarAlbum} />
       </div>
+
+      <ReporteReservas
+        reservas={reservas}
+        resumen={resumenReservas}
+        cargando={cargandoReservas}
+        exportando={exportando}
+        onActualizar={cargarReporteReservas}
+        onExportarPdf={() => exportarReporte('pdf')}
+        onExportarExcel={() => exportarReporte('excel')}
+      />
     </main>
   )
 }

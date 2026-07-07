@@ -32,6 +32,23 @@ CREATE TABLE IF NOT EXISTS tema (
     ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS reserva (
+  "idReserva" SERIAL PRIMARY KEY,
+  cliente VARCHAR(140) NOT NULL,
+  "correoCliente" VARCHAR(160),
+  "fechaReserva" DATE NOT NULL DEFAULT CURRENT_DATE,
+  "fechaEvento" DATE,
+  cantidad INT NOT NULL DEFAULT 1,
+  estado VARCHAR(40) NOT NULL DEFAULT 'Confirmada',
+  "montoTotal" NUMERIC(10, 2) NOT NULL DEFAULT 0,
+  "idAlbum" INT NOT NULL,
+  "fechaCreacion" TIMESTAMP DEFAULT now(),
+  CONSTRAINT "fkReservaAlbum"
+    FOREIGN KEY ("idAlbum") REFERENCES album("idAlbum")
+    ON UPDATE CASCADE
+    ON DELETE RESTRICT
+);
+
 INSERT INTO artista ("nombreArtista", pais, "generoMusical")
 VALUES ('Soda Stereo', 'Argentina', 'Rock')
 ON CONFLICT ("nombreArtista") DO NOTHING;
@@ -191,3 +208,33 @@ SELECT 'Hello', '00:04:55', 1, "idAlbum"
 FROM album
 WHERE "tituloAlbum" = '25'
   AND NOT EXISTS (SELECT 1 FROM tema WHERE "tituloTema" = 'Hello');
+
+INSERT INTO reserva (cliente, "correoCliente", "fechaReserva", "fechaEvento", cantidad, estado, "montoTotal", "idAlbum")
+SELECT 'Ana Torres', 'ana.torres@example.com', '2026-06-28', '2026-07-12', 2, 'Confirmada', 180.00, "idAlbum"
+FROM album
+WHERE "tituloAlbum" = 'Cancion Animal'
+  AND NOT EXISTS (SELECT 1 FROM reserva WHERE cliente = 'Ana Torres' AND "fechaReserva" = '2026-06-28');
+
+INSERT INTO reserva (cliente, "correoCliente", "fechaReserva", "fechaEvento", cantidad, estado, "montoTotal", "idAlbum")
+SELECT 'Luis Ramos', 'luis.ramos@example.com', '2026-06-30', '2026-07-15', 1, 'Pendiente', 95.00, "idAlbum"
+FROM album
+WHERE "tituloAlbum" = 'Discovery'
+  AND NOT EXISTS (SELECT 1 FROM reserva WHERE cliente = 'Luis Ramos' AND "fechaReserva" = '2026-06-30');
+
+INSERT INTO reserva (cliente, "correoCliente", "fechaReserva", "fechaEvento", cantidad, estado, "montoTotal", "idAlbum")
+SELECT 'Maria Salazar', 'maria.salazar@example.com', '2026-07-01', '2026-07-18', 4, 'Confirmada', 420.00, "idAlbum"
+FROM album
+WHERE "tituloAlbum" = 'Un Verano Sin Ti'
+  AND NOT EXISTS (SELECT 1 FROM reserva WHERE cliente = 'Maria Salazar' AND "fechaReserva" = '2026-07-01');
+
+INSERT INTO reserva (cliente, "correoCliente", "fechaReserva", "fechaEvento", cantidad, estado, "montoTotal", "idAlbum")
+SELECT 'Carlos Medina', 'carlos.medina@example.com', '2026-07-03', '2026-07-21', 3, 'Cancelada', 255.00, "idAlbum"
+FROM album
+WHERE "tituloAlbum" = 'Thriller'
+  AND NOT EXISTS (SELECT 1 FROM reserva WHERE cliente = 'Carlos Medina' AND "fechaReserva" = '2026-07-03');
+
+INSERT INTO reserva (cliente, "correoCliente", "fechaReserva", "fechaEvento", cantidad, estado, "montoTotal", "idAlbum")
+SELECT 'Valeria Cruz', 'valeria.cruz@example.com', '2026-07-05', '2026-07-25', 2, 'Confirmada', 210.00, "idAlbum"
+FROM album
+WHERE "tituloAlbum" = 'Motomami'
+  AND NOT EXISTS (SELECT 1 FROM reserva WHERE cliente = 'Valeria Cruz' AND "fechaReserva" = '2026-07-05');
