@@ -1,10 +1,23 @@
-# Discos Musicales
+# Discos Musicales - Practica 2
 
-Aplicacion de mantenimiento de albumes musicales.
+Aplicacion de mantenimiento de albumes musicales con reporte de reservas realizadas.
+
+## Enunciado De La Practica 2
+
+![Enunciado de la practica 2](Imagen%20pegada.png)
 
 ## Vista De La Aplicacion
 
 ![Vista de la aplicacion](frontend/imagen-pegada.png)
+
+## Funcionalidades Implementadas
+
+- Mantenimiento de albumes musicales.
+- Reporte de reservas realizadas consumido desde React con `useEffect`.
+- Exportacion del reporte de reservas a PDF desde el backend.
+- Exportacion del reporte de reservas a Excel desde el backend.
+- Cambio de estado de reservas desde el backend.
+- Validacion en base de datos para estados permitidos de reserva.
 
 Tecnologias usadas:
 
@@ -25,11 +38,14 @@ Tecnologias usadas:
 │   ├── conexion
 │   │   └── conexionBd.py
 │   ├── controladores
-│   │   └── albumControlador.py
+│   │   ├── albumControlador.py
+│   │   └── reservaControlador.py
 │   ├── modelos
-│   │   └── albumModelo.py
+│   │   ├── albumModelo.py
+│   │   └── reservaModelo.py
 │   └── rutas
-│       └── albumRutas.py
+│       ├── albumRutas.py
+│       └── reservaRutas.py
 └── frontend
     ├── .env
     ├── index.html
@@ -41,11 +57,13 @@ Tecnologias usadas:
         ├── styles.css
         ├── componentes
         │   ├── FormularioAlbum.jsx
+        │   ├── ReporteReservas.jsx
         │   └── TablaAlbum.jsx
         ├── paginas
         │   └── AlbumPagina.jsx
         └── servicios
-            └── albumServicio.js
+            ├── albumServicio.js
+            └── reservaServicio.js
 ```
 
 El proyecto ahora esta en la raiz del repositorio. Ya no se entra a una carpeta `discosMusicales`.
@@ -67,6 +85,7 @@ URLBASEBACKEND=http://localhost:5000
 URLBASEFRONTEND=http://localhost:5173
 RUTAAPI=/api
 RUTAALBUMES=/albumes
+RUTARESERVAS=/reservas
 DBHOST=localhost
 DBPUERTO=5436
 DBDIALECTO=postgresql
@@ -83,6 +102,7 @@ Valores importantes:
 - `URLBASEFRONTEND`: URL base del frontend. Actualmente es `http://localhost:5173`.
 - `RUTAAPI`: ruta base de la API. Actualmente es `/api`.
 - `RUTAALBUMES`: ruta base del recurso albumes. Actualmente es `/albumes`.
+- `RUTARESERVAS`: ruta base del recurso reservas. Actualmente es `/reservas`.
 - `DBHOST`: servidor de PostgreSQL. Actualmente es `localhost`.
 - `DBPUERTO`: puerto de PostgreSQL en Docker. Actualmente es `5436`.
 - `DBDIALECTO`: motor o dialecto de base de datos. Actualmente es `postgresql`.
@@ -194,8 +214,16 @@ Tablas creadas:
 - `artista`
 - `album`
 - `tema`
+- `reserva`
 
-La migracion inicial registra 10 albumes de prueba con sus artistas y un tema por album.
+La migracion inicial registra 10 albumes de prueba con sus artistas, un tema por album y 5 reservas de prueba.
+
+Estados permitidos para las reservas:
+
+- `Pendiente`
+- `Confirmada`
+- `Cancelada`
+- `Completada`
 
 El contenedor Docker crea el usuario y la base de datos.
 
@@ -220,8 +248,10 @@ Desde la raiz del proyecto:
 
 ```bash
 cd backend
-pip3 install -r requirements.txt
-python3 servidor.py
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python servidor.py
 ```
 
 El backend queda corriendo en:
@@ -317,17 +347,33 @@ PUT     /api/albumes/<idAlbum>
 DELETE  /api/albumes/<idAlbum>
 ```
 
+Rutas actuales del reporte de reservas:
+
+```text
+GET     /api/reservas/reporte
+GET     /api/reservas/reporte/pdf
+GET     /api/reservas/reporte/excel
+PATCH   /api/reservas/<idReserva>/estado
+```
+
 Estas rutas salen de `backend/.env`:
 
 ```text
 RUTAAPI=/api
 RUTAALBUMES=/albumes
+RUTARESERVAS=/reservas
 ```
 
 Ejemplo de URL completa:
 
 ```text
 http://localhost:5000/api/albumes
+```
+
+Ejemplo de URL completa para el reporte:
+
+```text
+http://localhost:5000/api/reservas/reporte
 ```
 
 ## Pruebas Con Curl
@@ -376,6 +422,32 @@ Eliminar un album:
 curl -X DELETE http://localhost:5000/api/albumes/1
 ```
 
+Listar reporte de reservas:
+
+```bash
+curl http://localhost:5000/api/reservas/reporte
+```
+
+Exportar reporte a PDF:
+
+```bash
+curl -o reporte_reservas.pdf http://localhost:5000/api/reservas/reporte/pdf
+```
+
+Exportar reporte a Excel:
+
+```bash
+curl -o reporte_reservas.xlsx http://localhost:5000/api/reservas/reporte/excel
+```
+
+Cambiar estado de una reserva:
+
+```bash
+curl -X PATCH http://localhost:5000/api/reservas/1/estado \
+  -H "Content-Type: application/json" \
+  -d '{"estado":"Completada"}'
+```
+
 ## Orden Para Ejecutar Todo
 
 1. Instalar PostgreSQL, Python, pip, Node y npm.
@@ -385,8 +457,10 @@ curl -X DELETE http://localhost:5000/api/albumes/1
 5. Revisar usuario, contraseña, nombre de base de datos y puerto en `backend/.env`.
 6. Crear el contenedor PostgreSQL con `docker run`.
 7. Ejecutar la migracion con `./backend/recrearBd.sh`.
-8. Correr el backend con `python3 servidor.py`.
-9. Copiar `frontend/.env.example` a `frontend/.env`.
-10. Revisar la URL del backend en `frontend/.env`.
-11. En el frontend ejecutar `npm install` solo si falta `node_modules`.
-12. Correr el frontend con `npm run dev`.
+8. Crear y activar el entorno virtual del backend.
+9. Instalar dependencias con `pip install -r requirements.txt`.
+10. Correr el backend con `python servidor.py`.
+11. Copiar `frontend/.env.example` a `frontend/.env`.
+12. Revisar la URL del backend en `frontend/.env`.
+13. En el frontend ejecutar `npm install` solo si falta `node_modules`.
+14. Correr el frontend con `npm run dev`.
