@@ -1,6 +1,6 @@
 from io import BytesIO
 
-from flask import jsonify, send_file
+from flask import jsonify, request, send_file
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 from reportlab.lib import colors
@@ -8,7 +8,10 @@ from reportlab.lib.pagesizes import landscape, letter
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
-from modelos.reservaModelo import listarReporteReservas
+from modelos.reservaModelo import actualizarEstadoReserva, buscarReservaPorId, listarReporteReservas
+
+
+ESTADOS_RESERVA = ("Pendiente", "Confirmada", "Cancelada", "Completada")
 
 
 ENCABEZADOS = [
@@ -63,6 +66,36 @@ def obtenerReporteReservas():
                     "totalEntradas": totalEntradas,
                     "totalImporte": totalImporte,
                 },
+            }
+        ), 200
+    except Exception as error:
+        return jsonify({"ok": False, "mensaje": str(error)}), 500
+
+
+def cambiarEstadoReserva(idReserva):
+    datos = request.json or {}
+    estado = str(datos.get("estado", "")).strip().capitalize()
+
+    if estado not in ESTADOS_RESERVA:
+        return jsonify(
+            {
+                "ok": False,
+                "mensaje": "Estado no valido.",
+                "estadosPermitidos": ESTADOS_RESERVA,
+            }
+        ), 400
+
+    try:
+        filasAfectadas = actualizarEstadoReserva(idReserva, estado)
+        if filasAfectadas == 0:
+            return jsonify({"ok": False, "mensaje": "Reserva no encontrada."}), 404
+
+        reserva = buscarReservaPorId(idReserva)
+        return jsonify(
+            {
+                "ok": True,
+                "mensaje": "Estado de reserva actualizado correctamente.",
+                "reserva": reserva,
             }
         ), 200
     except Exception as error:

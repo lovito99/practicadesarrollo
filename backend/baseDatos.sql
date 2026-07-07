@@ -43,6 +43,8 @@ CREATE TABLE IF NOT EXISTS reserva (
   "montoTotal" NUMERIC(10, 2) NOT NULL DEFAULT 0,
   "idAlbum" INT NOT NULL,
   "fechaCreacion" TIMESTAMP DEFAULT now(),
+  CONSTRAINT "chkReservaEstado"
+    CHECK (estado IN ('Pendiente', 'Confirmada', 'Cancelada', 'Completada')),
   CONSTRAINT "fkReservaAlbum"
     FOREIGN KEY ("idAlbum") REFERENCES album("idAlbum")
     ON UPDATE CASCADE

@@ -22,7 +22,7 @@ def crearApp():
     def permitirCors(respuesta):
         respuesta.headers["Access-Control-Allow-Origin"] = os.getenv("URLBASEFRONTEND", "*")
         respuesta.headers["Access-Control-Allow-Headers"] = "Content-Type"
-        respuesta.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS"
+        respuesta.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,PATCH,DELETE,OPTIONS"
         respuesta.headers["Access-Control-Expose-Headers"] = "Content-Disposition"
         return respuesta
 
