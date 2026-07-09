@@ -1,29 +1,50 @@
-# Discos Musicales - Practica 2
+# Discos Musicales - Practica 3
 
-Aplicacion de mantenimiento de albumes musicales con reporte de reservas realizadas.
+Aplicacion web para mantenimiento de albumes musicales con autenticacion JWT y listado de reservas por usuario. En esta version, el sistema no muestra datos del modulo principal hasta que el usuario inicia sesion.
 
-## Enunciado De La Practica 2
+## Objetivo De La Practica 3
 
-![Enunciado de la practica 2](Imagen%20pegada.png)
+Implementar acceso con usuario y contrasena usando JWT, y crear un modulo que permita listar solamente las reservas realizadas por el usuario autenticado.
 
-## Vista De La Aplicacion
+## Usuarios De Acceso
 
-![Vista de la aplicacion](frontend/imagen-pegada.png)
+Estos usuarios se crean al ejecutar `backend/baseDatos.sql` o `./backend/recrearBd.sh`.
 
-## Funcionalidades Implementadas
+| Usuario | Contrasena | Reservas visibles |
+| --- | --- | --- |
+| `ana.torres@example.com` | `ana123` | Reservas de Ana Torres |
+| `luis.ramos@example.com` | `luis123` | Reservas de Luis Ramos |
+| `admin@example.com` | `admin123` | Reservas asignadas al administrador |
 
+## Funcionalidades
+
+- Registro de usuarios.
+- Inicio de sesion con JWT.
+- Proteccion de rutas de reservas con `Authorization: Bearer TOKEN`.
+- Pantalla principal bloqueada hasta iniciar sesion.
 - Mantenimiento de albumes musicales.
-- Reporte de reservas realizadas consumido desde React con `useEffect`.
-- Exportacion del reporte de reservas a PDF desde el backend.
-- Exportacion del reporte de reservas a Excel desde el backend.
-- Cambio de estado de reservas desde el backend.
-- Validacion en base de datos para estados permitidos de reserva.
+- Listado de reservas filtradas por el usuario autenticado.
+- Exportacion de mis reservas en PDF.
+- Exportacion de mis reservas en Excel.
+- Cambio de estado de reservas.
+- Base de datos con relacion entre `usuario` y `reserva`.
 
-Tecnologias usadas:
+## Tecnologias
 
-- Backend: Python, Flask y PostgreSQL
-- Frontend: React con Vite
-- Base de datos: PostgreSQL
+- Backend: Python, Flask, PyJWT, Werkzeug y PostgreSQL.
+- Frontend: React, Vite y lucide-react.
+- Base de datos: PostgreSQL.
+- Reportes: openpyxl para Excel y reportlab para PDF.
+
+## Vistas De La Aplicacion
+
+### Login De Usuario
+
+![Login de usuario](losgin.png)
+
+### Reservas Por Usuario
+
+![Reservas por usuario](resrvas.png)
 
 ## Estructura Del Proyecto
 
@@ -31,23 +52,30 @@ Tecnologias usadas:
 .
 ├── README.md
 ├── backend
+│   ├── .env.example
 │   ├── baseDatos.sql
-│   ├── .env
+│   ├── recrearBd.sh
 │   ├── requirements.txt
 │   ├── servidor.py
 │   ├── conexion
 │   │   └── conexionBd.py
 │   ├── controladores
 │   │   ├── albumControlador.py
+│   │   ├── autenticacionControlador.py
 │   │   └── reservaControlador.py
 │   ├── modelos
 │   │   ├── albumModelo.py
-│   │   └── reservaModelo.py
-│   └── rutas
-│       ├── albumRutas.py
-│       └── reservaRutas.py
+│   │   ├── reservaModelo.py
+│   │   └── usuarioModelo.py
+│   ├── rutas
+│   │   ├── albumRutas.py
+│   │   ├── autenticacionRutas.py
+│   │   └── reservaRutas.py
+│   └── seguridad
+│       ├── __init__.py
+│       └── jwtServicio.py
 └── frontend
-    ├── .env
+    ├── .env.example
     ├── index.html
     ├── package.json
     ├── vite.config.js
@@ -63,20 +91,19 @@ Tecnologias usadas:
         │   └── AlbumPagina.jsx
         └── servicios
             ├── albumServicio.js
+            ├── autenticacionServicio.js
             └── reservaServicio.js
 ```
 
-El proyecto ahora esta en la raiz del repositorio. Ya no se entra a una carpeta `discosMusicales`.
-
 ## Configuracion Del Backend
 
-Archivo: `backend/.env`
-
-Ese archivo no se sube a Git. Para crearlo, copia el ejemplo:
+Crear el archivo `.env` del backend:
 
 ```bash
 cp backend/.env.example backend/.env
 ```
+
+Contenido esperado:
 
 ```env
 PUERTOBACKEND=5000
@@ -86,6 +113,8 @@ URLBASEFRONTEND=http://localhost:5173
 RUTAAPI=/api
 RUTAALBUMES=/albumes
 RUTARESERVAS=/reservas
+JWTSECRETO=cambia-este-secreto-en-produccion
+JWTHORAS=8
 DBHOST=localhost
 DBPUERTO=5436
 DBDIALECTO=postgresql
@@ -94,46 +123,52 @@ DBCLAVE=123456
 DBNOMBRE=discosmusicales
 ```
 
-Valores importantes:
+Variables principales:
 
-- `PUERTOBACKEND`: puerto donde corre Flask. Actualmente es `5000`.
-- `PUERTOFRONTEND`: puerto donde corre React con Vite. Actualmente es `5173`.
-- `URLBASEBACKEND`: URL base del backend. Actualmente es `http://localhost:5000`.
-- `URLBASEFRONTEND`: URL base del frontend. Actualmente es `http://localhost:5173`.
-- `RUTAAPI`: ruta base de la API. Actualmente es `/api`.
-- `RUTAALBUMES`: ruta base del recurso albumes. Actualmente es `/albumes`.
-- `RUTARESERVAS`: ruta base del recurso reservas. Actualmente es `/reservas`.
-- `DBHOST`: servidor de PostgreSQL. Actualmente es `localhost`.
-- `DBPUERTO`: puerto de PostgreSQL en Docker. Actualmente es `5436`.
-- `DBDIALECTO`: motor o dialecto de base de datos. Actualmente es `postgresql`.
-- `DBUSUARIO`: usuario de PostgreSQL para la aplicacion. Actualmente es `discos`.
-- `DBCLAVE`: contraseña del usuario. Actualmente es `123456`.
-- `DBNOMBRE`: nombre de la base de datos. Actualmente es `discosmusicales`.
+- `JWTSECRETO`: clave usada para firmar los tokens JWT.
+- `JWTHORAS`: duracion del token en horas.
+- `DBHOST`, `DBPUERTO`, `DBUSUARIO`, `DBCLAVE`, `DBNOMBRE`: datos de conexion a PostgreSQL.
+- `RUTAAPI`, `RUTAALBUMES`, `RUTARESERVAS`: rutas base de la API.
 
-Si tu PostgreSQL usa otro usuario, por ejemplo `postgres`, cambia:
+## Base De Datos
 
-```env
-DBUSUARIO=postgres
-DBCLAVE=tuClave
+La base de datos se define en:
+
+```text
+backend/baseDatos.sql
 ```
 
-## Comandos Rapidos En Ubuntu
+Tablas creadas:
 
-Instalar paquetes necesarios:
+- `artista`
+- `album`
+- `tema`
+- `usuario`
+- `reserva`
 
-```bash
-sudo apt update
-sudo apt install postgresql postgresql-contrib python3 python3-pip nodejs npm
+Relacion principal de la practica:
+
+```text
+usuario."idUsuario" 1 --- N reserva."idUsuario"
 ```
 
-Levantar PostgreSQL:
+La tabla `reserva` guarda el usuario dueno de cada reserva mediante la columna `"idUsuario"`. Por eso el endpoint de mis reservas puede filtrar y devolver solo los registros del usuario autenticado.
 
-```bash
-sudo systemctl start postgresql
-sudo systemctl enable postgresql
-```
+Datos iniciales:
 
-Crear el contenedor PostgreSQL del proyecto:
+- 10 artistas/albumes de prueba.
+- 10 temas de prueba.
+- 3 usuarios de acceso.
+- 5 reservas asociadas a usuarios.
+
+Estados permitidos para reservas:
+
+- `Pendiente`
+- `Confirmada`
+- `Cancelada`
+- `Completada`
+
+## Crear PostgreSQL Con Docker
 
 ```bash
 docker run -d --name discosmusicales_postgres \
@@ -144,105 +179,23 @@ docker run -d --name discosmusicales_postgres \
   postgres:16-alpine
 ```
 
-Esto crea:
+## Migrar O Recrear La Base De Datos
 
-```text
-usuario: discos
-clave: 123456
-base de datos: discosmusicales
-puerto local: 5436
-```
-
-Despues verifica que `backend/.env` tenga `DBUSUARIO=discos` y `DBCLAVE=123456`.
-
-## Base De Datos
-
-La base de datos esta en:
-
-```text
-backend/baseDatos.sql
-```
-
-Para limpiar las tablas y ejecutar la migracion inicial con los datos actuales del proyecto:
+Desde la raiz del proyecto:
 
 ```bash
-cd ~/Documentos/GitHub/practicadesarrollo
 ./backend/recrearBd.sh
 ```
 
-Tambien puedes ejecutar todo automaticamente con:
+El script limpia el esquema `public`, ejecuta `backend/baseDatos.sql` y verifica las tablas creadas.
 
-```bash
-cd ~/Documentos/GitHub/practicadesarrollo
-chmod +x backend/recrearBd.sh
-./backend/recrearBd.sh
-```
-
-El script limpia el esquema `public`, ejecuta `backend/baseDatos.sql` y verifica la conexion con el usuario del `.env`.
-
-Ese comando usa:
-
-```text
-usuario: discos
-clave: 123456
-base de datos: discosmusicales
-puerto: 5436
-```
-
-Para ejecutar la migracion manualmente en PostgreSQL:
+Migracion manual:
 
 ```bash
 PGPASSWORD="123456" psql -h localhost -p 5436 -U discos -d discosmusicales -f backend/baseDatos.sql
 ```
 
-Si pide clave, escribe `123456`.
-
-Si usas otro usuario:
-
-```bash
-psql -h localhost -p 5436 -U tuUsuario -d discosmusicales -f backend/baseDatos.sql
-```
-
-La base creada se llama:
-
-```text
-discosmusicales
-```
-
-Tablas creadas:
-
-- `artista`
-- `album`
-- `tema`
-- `reserva`
-
-La migracion inicial registra 10 albumes de prueba con sus artistas, un tema por album y 5 reservas de prueba.
-
-Estados permitidos para las reservas:
-
-- `Pendiente`
-- `Confirmada`
-- `Cancelada`
-- `Completada`
-
-El contenedor Docker crea el usuario y la base de datos.
-
-El unico archivo SQL crea tablas y datos iniciales:
-
-```text
-backend/baseDatos.sql
-```
-
-Para ejecutar la migracion usando los valores de `backend/.env`:
-
-```bash
-set -a
-. backend/.env
-set +a
-PGPASSWORD="$DBCLAVE" psql -h "$DBHOST" -p "$DBPUERTO" -U "$DBUSUARIO" -d "$DBNOMBRE" -f backend/baseDatos.sql
-```
-
-## Como Correr El Backend
+## Levantar El Backend
 
 Desde la raiz del proyecto:
 
@@ -254,13 +207,13 @@ pip install -r requirements.txt
 python servidor.py
 ```
 
-El backend queda corriendo en:
+Backend:
 
 ```text
 http://localhost:5000
 ```
 
-La API queda corriendo en:
+API:
 
 ```text
 http://localhost:5000/api
@@ -268,76 +221,74 @@ http://localhost:5000/api
 
 ## Configuracion Del Frontend
 
-Archivo: `frontend/.env`
-
-Ese archivo no se sube a Git. Para crearlo, copia el ejemplo:
+Crear el archivo `.env` del frontend:
 
 ```bash
 cp frontend/.env.example frontend/.env
 ```
 
-```env
-VITEAPIURL=http://localhost:5000/api
-```
-
-Ese valor debe apuntar al backend usando `URLBASEBACKEND` + `RUTAAPI`.
-
-Con la configuracion actual del backend:
-
-```text
-URLBASEBACKEND=http://localhost:5000
-RUTAAPI=/api
-```
-
-Entonces en el frontend queda:
+Contenido esperado:
 
 ```env
 VITEAPIURL=http://localhost:5000/api
 ```
 
-Si cambias el puerto o la ruta del backend, tambien cambia esta URL.
-
-Ejemplo si Flask corre en el puerto `8000`:
-
-```env
-VITEAPIURL=http://localhost:8000/api
-```
-
-Si cambias la ruta base del backend a `/backend`, entonces:
-
-```env
-VITEAPIURL=http://localhost:5000/backend
-```
-
-## Como Correr El Frontend
-
-Desde la raiz del proyecto:
+## Levantar El Frontend
 
 ```bash
 cd frontend
-```
-
-Instala dependencias solo si es la primera vez o si no existe la carpeta `node_modules`:
-
-```bash
 npm install
-```
-
-Para iniciar React si se necesita ver la pagina:
-
-```bash
 npm run dev
 ```
 
-Vite mostrara una URL parecida a:
+Frontend:
 
 ```text
 http://localhost:5173
 ```
 
-## Rutas Del Backend
+## Flujo De Uso
 
-Rutas actuales del mantenimiento de album:
+1. Abrir `http://localhost:5173`.
+2. Iniciar sesion con uno de los usuarios de acceso.
+3. Luego del login se muestra el mantenimiento de albumes.
+4. El reporte muestra solo las reservas del usuario autenticado.
+5. Desde el reporte se puede exportar PDF o Excel.
+6. Al cerrar sesion, se ocultan nuevamente los datos.
+
+## Rutas De Autenticacion
+
+```text
+POST  /api/autenticacion/registro
+POST  /api/autenticacion/login
+GET   /api/autenticacion/perfil
+```
+
+Login:
+
+```bash
+curl -X POST http://localhost:5000/api/autenticacion/login \
+  -H "Content-Type: application/json" \
+  -d '{"correo":"ana.torres@example.com","clave":"ana123"}'
+```
+
+Guardar token en una variable:
+
+```bash
+TOKEN=$(curl -s -X POST http://localhost:5000/api/autenticacion/login \
+  -H "Content-Type: application/json" \
+  -d '{"correo":"ana.torres@example.com","clave":"ana123"}' \
+  | python3 -c "import sys, json; print(json.load(sys.stdin)['token'])")
+```
+
+Perfil autenticado:
+
+```bash
+curl http://localhost:5000/api/autenticacion/perfil \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+## Rutas De Albumes
 
 ```text
 GET     /api/albumes
@@ -347,50 +298,13 @@ PUT     /api/albumes/<idAlbum>
 DELETE  /api/albumes/<idAlbum>
 ```
 
-Rutas actuales del reporte de reservas:
-
-```text
-GET     /api/reservas/reporte
-GET     /api/reservas/reporte/pdf
-GET     /api/reservas/reporte/excel
-PATCH   /api/reservas/<idReserva>/estado
-```
-
-Estas rutas salen de `backend/.env`:
-
-```text
-RUTAAPI=/api
-RUTAALBUMES=/albumes
-RUTARESERVAS=/reservas
-```
-
-Ejemplo de URL completa:
-
-```text
-http://localhost:5000/api/albumes
-```
-
-Ejemplo de URL completa para el reporte:
-
-```text
-http://localhost:5000/api/reservas/reporte
-```
-
-## Pruebas Con Curl
-
 Listar albumes:
 
 ```bash
 curl http://localhost:5000/api/albumes
 ```
 
-Buscar un album por ID:
-
-```bash
-curl http://localhost:5000/api/albumes/1
-```
-
-Registrar un album:
+Registrar album:
 
 ```bash
 curl -X POST http://localhost:5000/api/albumes \
@@ -403,64 +317,68 @@ curl -X POST http://localhost:5000/api/albumes \
   }'
 ```
 
-Actualizar un album:
+## Rutas De Reservas Por Usuario
 
-```bash
-curl -X PUT http://localhost:5000/api/albumes/1 \
-  -H "Content-Type: application/json" \
-  -d '{
-    "tituloAlbum": "Cancion Animal Editado",
-    "fechaLanzamiento": "1990-08-07",
-    "genero": "Rock",
-    "idArtista": 1
-  }'
+Estas rutas requieren token JWT:
+
+```text
+GET     /api/reservas/mis-reservas
+GET     /api/reservas/reporte
+GET     /api/reservas/reporte/pdf
+GET     /api/reservas/reporte/excel
+PATCH   /api/reservas/<idReserva>/estado
 ```
 
-Eliminar un album:
+Encabezado obligatorio:
 
-```bash
-curl -X DELETE http://localhost:5000/api/albumes/1
+```text
+Authorization: Bearer TOKEN
 ```
 
-Listar reporte de reservas:
+Listar mis reservas:
 
 ```bash
-curl http://localhost:5000/api/reservas/reporte
+curl http://localhost:5000/api/reservas/mis-reservas \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
-Exportar reporte a PDF:
+Exportar PDF:
 
 ```bash
-curl -o reporte_reservas.pdf http://localhost:5000/api/reservas/reporte/pdf
+curl -o reporte_reservas.pdf http://localhost:5000/api/reservas/reporte/pdf \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
-Exportar reporte a Excel:
+Exportar Excel:
 
 ```bash
-curl -o reporte_reservas.xlsx http://localhost:5000/api/reservas/reporte/excel
+curl -o reporte_reservas.xlsx http://localhost:5000/api/reservas/reporte/excel \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
-Cambiar estado de una reserva:
+Cambiar estado:
 
 ```bash
 curl -X PATCH http://localhost:5000/api/reservas/1/estado \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
   -d '{"estado":"Completada"}'
 ```
 
-## Orden Para Ejecutar Todo
+## Orden Recomendado Para Ejecutar
 
-1. Instalar PostgreSQL, Python, pip, Node y npm.
-2. Levantar PostgreSQL.
-3. Crear la clave del usuario `postgres`.
-4. Copiar `backend/.env.example` a `backend/.env`.
-5. Revisar usuario, contraseña, nombre de base de datos y puerto en `backend/.env`.
-6. Crear el contenedor PostgreSQL con `docker run`.
-7. Ejecutar la migracion con `./backend/recrearBd.sh`.
-8. Crear y activar el entorno virtual del backend.
-9. Instalar dependencias con `pip install -r requirements.txt`.
-10. Correr el backend con `python servidor.py`.
-11. Copiar `frontend/.env.example` a `frontend/.env`.
-12. Revisar la URL del backend en `frontend/.env`.
-13. En el frontend ejecutar `npm install` solo si falta `node_modules`.
-14. Correr el frontend con `npm run dev`.
+1. Crear o verificar el contenedor PostgreSQL.
+2. Copiar `backend/.env.example` a `backend/.env`.
+3. Ejecutar `./backend/recrearBd.sh`.
+4. Levantar el backend con `python servidor.py`.
+5. Copiar `frontend/.env.example` a `frontend/.env`.
+6. Levantar el frontend con `npm run dev`.
+7. Iniciar sesion con un usuario de acceso.
+
+## Nota Sobre Node
+
+La version instalada de Vite puede requerir Node `20.19+` o `22.12+` para ejecutar `npm run build`. Para desarrollo local, usar:
+
+```bash
+npm run dev
+```

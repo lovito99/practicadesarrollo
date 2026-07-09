@@ -36,6 +36,7 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 18px;
   margin-bottom: 22px;
 }
 
@@ -54,6 +55,68 @@ button {
   color: #ffffff;
   background: #16646f;
   box-shadow: 0 10px 24px rgb(22 100 111 / 18%);
+}
+
+.sesion-panel {
+  min-width: min(100%, 620px);
+}
+
+.formulario-sesion {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.formulario-sesion input,
+.campo-clave {
+  width: 220px;
+  min-height: 44px;
+}
+
+.formulario-sesion input {
+  min-height: 44px;
+}
+
+.campo-clave {
+  position: relative;
+}
+
+.campo-clave input {
+  width: 100%;
+  padding-right: 42px;
+}
+
+.boton-ver-clave {
+  position: absolute;
+  top: 50%;
+  right: 7px;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  color: #5b6267;
+  background: transparent;
+  transform: translateY(-50%);
+}
+
+.boton-ver-clave:hover {
+  color: #16646f;
+  background: #e8f3f4;
+}
+
+.sesion-activa {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.sesion-activa span {
+  color: #16646f;
+  font-weight: 800;
 }
 
 .etiqueta {
@@ -346,6 +409,22 @@ td {
 
   .cabecera {
     align-items: flex-start;
+    display: grid;
+  }
+
+  .sesion-panel {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .formulario-sesion,
+  .sesion-activa {
+    justify-content: flex-start;
+  }
+
+  .formulario-sesion input,
+  .campo-clave {
+    width: 100%;
   }
 
   .reporte-encabezado {

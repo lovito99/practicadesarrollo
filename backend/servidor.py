@@ -1,9 +1,10 @@
 import os
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 
 from conexion.conexionBd import cargarEntorno
 from rutas.albumRutas import registrarRutasAlbum
+from rutas.autenticacionRutas import registrarRutasAutenticacion
 from rutas.reservaRutas import registrarRutasReserva
 
 cargarEntorno()
@@ -15,13 +16,17 @@ def crearApp():
     app.config["RUTAALBUMES"] = os.getenv("RUTAALBUMES", "/albumes")
     app.config["RUTARESERVAS"] = os.getenv("RUTARESERVAS", "/reservas")
 
+    registrarRutasAutenticacion(app)
     registrarRutasAlbum(app)
     registrarRutasReserva(app)
 
     @app.after_request
     def permitirCors(respuesta):
-        respuesta.headers["Access-Control-Allow-Origin"] = os.getenv("URLBASEFRONTEND", "*")
-        respuesta.headers["Access-Control-Allow-Headers"] = "Content-Type"
+        origen = request.headers.get("Origin")
+        origenPermitido = os.getenv("URLBASEFRONTEND", "*")
+        respuesta.headers["Access-Control-Allow-Origin"] = origen or origenPermitido
+        respuesta.headers["Vary"] = "Origin"
+        respuesta.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
         respuesta.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,PATCH,DELETE,OPTIONS"
         respuesta.headers["Access-Control-Expose-Headers"] = "Content-Disposition"
         return respuesta

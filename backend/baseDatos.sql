@@ -32,6 +32,14 @@ CREATE TABLE IF NOT EXISTS tema (
     ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS usuario (
+  "idUsuario" SERIAL PRIMARY KEY,
+  nombre VARCHAR(140) NOT NULL,
+  correo VARCHAR(160) NOT NULL UNIQUE,
+  clave VARCHAR(260) NOT NULL,
+  "fechaCreacion" TIMESTAMP DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS reserva (
   "idReserva" SERIAL PRIMARY KEY,
   cliente VARCHAR(140) NOT NULL,
@@ -42,14 +50,31 @@ CREATE TABLE IF NOT EXISTS reserva (
   estado VARCHAR(40) NOT NULL DEFAULT 'Confirmada',
   "montoTotal" NUMERIC(10, 2) NOT NULL DEFAULT 0,
   "idAlbum" INT NOT NULL,
+  "idUsuario" INT,
   "fechaCreacion" TIMESTAMP DEFAULT now(),
   CONSTRAINT "chkReservaEstado"
     CHECK (estado IN ('Pendiente', 'Confirmada', 'Cancelada', 'Completada')),
   CONSTRAINT "fkReservaAlbum"
     FOREIGN KEY ("idAlbum") REFERENCES album("idAlbum")
     ON UPDATE CASCADE
+    ON DELETE RESTRICT,
+  CONSTRAINT "fkReservaUsuario"
+    FOREIGN KEY ("idUsuario") REFERENCES usuario("idUsuario")
+    ON UPDATE CASCADE
     ON DELETE RESTRICT
 );
+
+INSERT INTO usuario (nombre, correo, clave)
+VALUES ('Ana Torres', 'ana.torres@example.com', 'scrypt:32768:8:1$9QqXVIsgbKJyMnvJ$54d65e88842e56b5f384fb600d2649ff112c5bbe6c13ed339be15d330652a0149fe29c3d58dc5f82605d991446f21df2241b081335e08ef01d616987c93758cc')
+ON CONFLICT (correo) DO NOTHING;
+
+INSERT INTO usuario (nombre, correo, clave)
+VALUES ('Luis Ramos', 'luis.ramos@example.com', 'scrypt:32768:8:1$6PpEyqnz0ylmzWQ3$6d0c2ecc7fcf9b4c7a287656a34e09af57fba472e0526e91c4693c73e0136089caade7a239d62ae6d13141dc997f9176e40f352793bc49650d2a3e972d1eedf6')
+ON CONFLICT (correo) DO NOTHING;
+
+INSERT INTO usuario (nombre, correo, clave)
+VALUES ('Administrador', 'admin@example.com', 'scrypt:32768:8:1$apyoCxLQKTwwP8eu$69fee0be76e43033d4f610c23293920e4ab866d9105c8a782ebf7069d1d12e0f019f4de5e94e08aa68cf7a14e44893a44cacd25918604b4016cbf1c54300eff6')
+ON CONFLICT (correo) DO NOTHING;
 
 INSERT INTO artista ("nombreArtista", pais, "generoMusical")
 VALUES ('Soda Stereo', 'Argentina', 'Rock')
@@ -211,32 +236,37 @@ FROM album
 WHERE "tituloAlbum" = '25'
   AND NOT EXISTS (SELECT 1 FROM tema WHERE "tituloTema" = 'Hello');
 
-INSERT INTO reserva (cliente, "correoCliente", "fechaReserva", "fechaEvento", cantidad, estado, "montoTotal", "idAlbum")
-SELECT 'Ana Torres', 'ana.torres@example.com', '2026-06-28', '2026-07-12', 2, 'Confirmada', 180.00, "idAlbum"
-FROM album
-WHERE "tituloAlbum" = 'Cancion Animal'
+INSERT INTO reserva (cliente, "correoCliente", "fechaReserva", "fechaEvento", cantidad, estado, "montoTotal", "idAlbum", "idUsuario")
+SELECT 'Ana Torres', 'ana.torres@example.com', '2026-06-28', '2026-07-12', 2, 'Confirmada', 180.00, a."idAlbum", u."idUsuario"
+FROM album a
+INNER JOIN usuario u ON u.correo = 'ana.torres@example.com'
+WHERE a."tituloAlbum" = 'Cancion Animal'
   AND NOT EXISTS (SELECT 1 FROM reserva WHERE cliente = 'Ana Torres' AND "fechaReserva" = '2026-06-28');
 
-INSERT INTO reserva (cliente, "correoCliente", "fechaReserva", "fechaEvento", cantidad, estado, "montoTotal", "idAlbum")
-SELECT 'Luis Ramos', 'luis.ramos@example.com', '2026-06-30', '2026-07-15', 1, 'Pendiente', 95.00, "idAlbum"
-FROM album
-WHERE "tituloAlbum" = 'Discovery'
+INSERT INTO reserva (cliente, "correoCliente", "fechaReserva", "fechaEvento", cantidad, estado, "montoTotal", "idAlbum", "idUsuario")
+SELECT 'Luis Ramos', 'luis.ramos@example.com', '2026-06-30', '2026-07-15', 1, 'Pendiente', 95.00, a."idAlbum", u."idUsuario"
+FROM album a
+INNER JOIN usuario u ON u.correo = 'luis.ramos@example.com'
+WHERE a."tituloAlbum" = 'Discovery'
   AND NOT EXISTS (SELECT 1 FROM reserva WHERE cliente = 'Luis Ramos' AND "fechaReserva" = '2026-06-30');
 
-INSERT INTO reserva (cliente, "correoCliente", "fechaReserva", "fechaEvento", cantidad, estado, "montoTotal", "idAlbum")
-SELECT 'Maria Salazar', 'maria.salazar@example.com', '2026-07-01', '2026-07-18', 4, 'Confirmada', 420.00, "idAlbum"
-FROM album
-WHERE "tituloAlbum" = 'Un Verano Sin Ti'
+INSERT INTO reserva (cliente, "correoCliente", "fechaReserva", "fechaEvento", cantidad, estado, "montoTotal", "idAlbum", "idUsuario")
+SELECT 'Maria Salazar', 'maria.salazar@example.com', '2026-07-01', '2026-07-18', 4, 'Confirmada', 420.00, a."idAlbum", u."idUsuario"
+FROM album a
+INNER JOIN usuario u ON u.correo = 'admin@example.com'
+WHERE a."tituloAlbum" = 'Un Verano Sin Ti'
   AND NOT EXISTS (SELECT 1 FROM reserva WHERE cliente = 'Maria Salazar' AND "fechaReserva" = '2026-07-01');
 
-INSERT INTO reserva (cliente, "correoCliente", "fechaReserva", "fechaEvento", cantidad, estado, "montoTotal", "idAlbum")
-SELECT 'Carlos Medina', 'carlos.medina@example.com', '2026-07-03', '2026-07-21', 3, 'Cancelada', 255.00, "idAlbum"
-FROM album
-WHERE "tituloAlbum" = 'Thriller'
+INSERT INTO reserva (cliente, "correoCliente", "fechaReserva", "fechaEvento", cantidad, estado, "montoTotal", "idAlbum", "idUsuario")
+SELECT 'Carlos Medina', 'carlos.medina@example.com', '2026-07-03', '2026-07-21', 3, 'Cancelada', 255.00, a."idAlbum", u."idUsuario"
+FROM album a
+INNER JOIN usuario u ON u.correo = 'admin@example.com'
+WHERE a."tituloAlbum" = 'Thriller'
   AND NOT EXISTS (SELECT 1 FROM reserva WHERE cliente = 'Carlos Medina' AND "fechaReserva" = '2026-07-03');
 
-INSERT INTO reserva (cliente, "correoCliente", "fechaReserva", "fechaEvento", cantidad, estado, "montoTotal", "idAlbum")
-SELECT 'Valeria Cruz', 'valeria.cruz@example.com', '2026-07-05', '2026-07-25', 2, 'Confirmada', 210.00, "idAlbum"
-FROM album
-WHERE "tituloAlbum" = 'Motomami'
+INSERT INTO reserva (cliente, "correoCliente", "fechaReserva", "fechaEvento", cantidad, estado, "montoTotal", "idAlbum", "idUsuario")
+SELECT 'Valeria Cruz', 'valeria.cruz@example.com', '2026-07-05', '2026-07-25', 2, 'Confirmada', 210.00, a."idAlbum", u."idUsuario"
+FROM album a
+INNER JOIN usuario u ON u.correo = 'admin@example.com'
+WHERE a."tituloAlbum" = 'Motomami'
   AND NOT EXISTS (SELECT 1 FROM reserva WHERE cliente = 'Valeria Cruz' AND "fechaReserva" = '2026-07-05');

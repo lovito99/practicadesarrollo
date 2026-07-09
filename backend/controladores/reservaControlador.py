@@ -9,6 +9,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from modelos.reservaModelo import actualizarEstadoReserva, buscarReservaPorId, listarReporteReservas
+from seguridad.jwtServicio import jwtRequerido
 
 
 ESTADOS_RESERVA = ("Pendiente", "Confirmada", "Cancelada", "Completada")
@@ -50,28 +51,31 @@ def filasReporte(reservas):
     ]
 
 
+def construirResumenReservas(reservas):
+    return {
+        "totalReservas": len(reservas),
+        "totalEntradas": sum(int(reserva.get("cantidad") or 0) for reserva in reservas),
+        "totalImporte": sum(float(reserva.get("montoTotal") or 0) for reserva in reservas),
+    }
+
+
+@jwtRequerido
 def obtenerReporteReservas():
     try:
-        reservas = listarReporteReservas()
-        totalReservas = len(reservas)
-        totalEntradas = sum(int(reserva.get("cantidad") or 0) for reserva in reservas)
-        totalImporte = sum(float(reserva.get("montoTotal") or 0) for reserva in reservas)
+        reservas = listarReporteReservas(request.usuario["idUsuario"])
 
         return jsonify(
             {
                 "ok": True,
                 "reservas": reservas,
-                "resumen": {
-                    "totalReservas": totalReservas,
-                    "totalEntradas": totalEntradas,
-                    "totalImporte": totalImporte,
-                },
+                "resumen": construirResumenReservas(reservas),
             }
         ), 200
     except Exception as error:
         return jsonify({"ok": False, "mensaje": str(error)}), 500
 
 
+@jwtRequerido
 def cambiarEstadoReserva(idReserva):
     datos = request.json or {}
     estado = str(datos.get("estado", "")).strip().capitalize()
@@ -86,11 +90,11 @@ def cambiarEstadoReserva(idReserva):
         ), 400
 
     try:
-        filasAfectadas = actualizarEstadoReserva(idReserva, estado)
+        filasAfectadas = actualizarEstadoReserva(idReserva, estado, request.usuario["idUsuario"])
         if filasAfectadas == 0:
             return jsonify({"ok": False, "mensaje": "Reserva no encontrada."}), 404
 
-        reserva = buscarReservaPorId(idReserva)
+        reserva = buscarReservaPorId(idReserva, request.usuario["idUsuario"])
         return jsonify(
             {
                 "ok": True,
@@ -102,9 +106,10 @@ def cambiarEstadoReserva(idReserva):
         return jsonify({"ok": False, "mensaje": str(error)}), 500
 
 
+@jwtRequerido
 def exportarReporteReservasExcel():
     try:
-        reservas = listarReporteReservas()
+        reservas = listarReporteReservas(request.usuario["idUsuario"])
         libro = Workbook()
         hoja = libro.active
         hoja.title = "Reservas"
@@ -146,9 +151,10 @@ def exportarReporteReservasExcel():
         return jsonify({"ok": False, "mensaje": str(error)}), 500
 
 
+@jwtRequerido
 def exportarReporteReservasPdf():
     try:
-        reservas = listarReporteReservas()
+        reservas = listarReporteReservas(request.usuario["idUsuario"])
         archivo = BytesIO()
         documento = SimpleDocTemplate(
             archivo,

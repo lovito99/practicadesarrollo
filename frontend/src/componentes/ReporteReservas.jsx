@@ -12,6 +12,7 @@ export default function ReporteReservas({
   resumen,
   cargando,
   exportando,
+  autenticado,
   onActualizar,
   onExportarExcel,
   onExportarPdf,
@@ -21,17 +22,23 @@ export default function ReporteReservas({
       <div className="panel-encabezado reporte-encabezado">
         <div>
           <p className="etiqueta">Reporte</p>
-          <h2>Reservas realizadas</h2>
+          <h2>Mis reservas realizadas</h2>
         </div>
         <div className="acciones-reporte">
-          <button type="button" className="boton icono" onClick={onActualizar} disabled={cargando} title="Actualizar">
+          <button
+            type="button"
+            className="boton icono"
+            onClick={onActualizar}
+            disabled={cargando || !autenticado}
+            title="Actualizar"
+          >
             <RefreshCw size={17} />
           </button>
-          <button type="button" className="boton" onClick={onExportarPdf} disabled={exportando}>
+          <button type="button" className="boton" onClick={onExportarPdf} disabled={exportando || !autenticado}>
             <FileText size={18} />
             PDF
           </button>
-          <button type="button" className="boton primario" onClick={onExportarExcel} disabled={exportando}>
+          <button type="button" className="boton primario" onClick={onExportarExcel} disabled={exportando || !autenticado}>
             <FileSpreadsheet size={18} />
             Excel
           </button>
@@ -70,7 +77,13 @@ export default function ReporteReservas({
             </tr>
           </thead>
           <tbody>
-            {cargando ? (
+            {!autenticado ? (
+              <tr>
+                <td colSpan="10" className="estado-tabla">
+                  Inicia sesion para ver tus reservas.
+                </td>
+              </tr>
+            ) : cargando ? (
               <tr>
                 <td colSpan="10" className="estado-tabla">
                   Cargando reservas...

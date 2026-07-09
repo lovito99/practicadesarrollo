@@ -1,7 +1,13 @@
+import { obtenerToken } from './autenticacionServicio.js'
+
 const apiUrl = import.meta.env.VITEAPIURL || 'http://localhost:5000/api'
 
 async function solicitar(ruta) {
-  const respuesta = await fetch(`${apiUrl}${ruta}`)
+  const respuesta = await fetch(`${apiUrl}${ruta}`, {
+    headers: {
+      Authorization: `Bearer ${obtenerToken()}`,
+    },
+  })
   const datos = await respuesta.json().catch(() => ({}))
 
   if (!respuesta.ok) {
@@ -18,7 +24,11 @@ function obtenerNombreArchivo(respuesta, nombrePorDefecto) {
 }
 
 async function descargarArchivo(ruta, nombrePorDefecto) {
-  const respuesta = await fetch(`${apiUrl}${ruta}`)
+  const respuesta = await fetch(`${apiUrl}${ruta}`, {
+    headers: {
+      Authorization: `Bearer ${obtenerToken()}`,
+    },
+  })
 
   if (!respuesta.ok) {
     const datos = await respuesta.json().catch(() => ({}))
@@ -37,7 +47,7 @@ async function descargarArchivo(ruta, nombrePorDefecto) {
 }
 
 export function obtenerReporteReservas() {
-  return solicitar('/reservas/reporte')
+  return solicitar('/reservas/mis-reservas')
 }
 
 export function descargarReporteReservasPdf() {
